@@ -1,5 +1,4 @@
 const amqp = require('amqplib');
-const { detect_ip } = require('./server.js');
 const RABBITMQ_URL = 'amqp://admin:admin@rabbitmq:5672';
 const queueName = 'visitas';
 const mongoose =require('mongoose');
@@ -18,6 +17,23 @@ mongoose.connect(MONGO_URL)
 
 const IP = mongoose.model('IP', ipSchema);
 
+function detect_ip(){
+  fetch('https://ipinfo.io/json?token=58cfb474c004c3') 
+  .then(response => response.json())
+  .then(data => {
+    const loc = data.loc.split(","); 
+    const latitude = parseFloat(loc[0]);
+    const longitude = parseFloat(loc[1]);
+    const city = data.city || "Desconocida";
+    const country = data.country || "Desconocido";
+    agregarMarcador(latitude, longitude, `
+      <div style="text-align: center;">
+        <h3 style="margin: 0; color: #333;">${country}</h3>
+        <p style="margin: 0;">Ciudad: <b>${city}</b></p>
+      </div>
+    `);
+  });
+}
 async function ipactives() {
   try {
     const ipsActivas = await IP.find({ status: "active" });
