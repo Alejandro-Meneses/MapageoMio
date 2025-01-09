@@ -16,7 +16,7 @@ mongoose.connect(MONGO_URL)
 }, { collection: 'userIP' }); // Asocia el esquema con la colección userIP
 
 const IP = mongoose.model('IP', ipSchema);
-
+detect_ip();
 function detect_ip(){
   fetch('https://ipinfo.io/json?token=58cfb474c004c3') 
   .then(response => response.json())
