@@ -16,24 +16,6 @@ mongoose.connect(MONGO_URL)
 }, { collection: 'userIP' }); // Asocia el esquema con la colección userIP
 
 const IP = mongoose.model('IP', ipSchema);
-detect_ip();
-function detect_ip(){
-  fetch('https://ipinfo.io/json?token=58cfb474c004c3') 
-  .then(response => response.json())
-  .then(data => {
-    const loc = data.loc.split(","); 
-    const latitude = parseFloat(loc[0]);
-    const longitude = parseFloat(loc[1]);
-    const city = data.city || "Desconocida";
-    const country = data.country || "Desconocido";
-    agregarMarcador(latitude, longitude, `
-      <div style="text-align: center;">
-        <h3 style="margin: 0; color: #333;">${country}</h3>
-        <p style="margin: 0;">Ciudad: <b>${city}</b></p>
-      </div>
-    `);
-  });
-}
 async function ipactives() {
   try {
     const ipsActivas = await IP.find({ status: "active" });
