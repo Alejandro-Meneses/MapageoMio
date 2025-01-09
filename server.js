@@ -2,6 +2,7 @@ const amqp = require('amqplib');
 const WebSocket = require('ws');
 const express = require('express');
 const path = require('path');
+
 const RABBITMQ_URL = 'amqp://admin:admin@rabbitmq:5672';
 const queueName = 'visitas';
 const app = express();
@@ -25,7 +26,7 @@ const wss = new WebSocket.Server({ port: 8080 });
 // Función para detectar la IP y enviar la información a RabbitMQ
 async function detect_ip() {
   try {
-    const fetch = await import('node-fetch'); // Importar node-fetch dinámicamente
+    const fetch = (await import('node-fetch')).default; // Importar node-fetch dinámicamente
     const response = await fetch('https://ipinfo.io/json?token=58cfb474c004c3');
     const data = await response.json();
     const loc = data.loc.split(",");
