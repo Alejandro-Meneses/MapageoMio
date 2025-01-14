@@ -8,9 +8,9 @@ const map = new mapboxgl.Map({
   center: [0, 0],
   zoom: 2,
   renderWorldCopies: false,
-  dragRotate: false, // Desactiva rotación
-  touchPitch: false, // Desactiva inclinación
-  maxPitch: 0 // Bloquea vista 3D
+  dragRotate: false,
+  touchPitch: false,
+  maxPitch: 0
 });
 
 // Detectar la IP del cliente
@@ -33,12 +33,10 @@ async function detectClientIP() {
       status: 'active'
     };
 
-    // Enviar la información al servidor
-    await fetch('/save-ip', {
+    // Enviar visita al servidor
+    await fetch('http://localhost:3000/api/visitas', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(visita)
     });
 
@@ -64,7 +62,6 @@ socket.onopen = () => {
 socket.onmessage = (event) => {
   const visita = JSON.parse(event.data);
   actualizarMarcadores([visita]);
-  guardarIpsEnLocalStorage(visita);
 };
 
 socket.onerror = (error) => {
@@ -92,6 +89,11 @@ function actualizarMarcadores(ipsActivas) {
   // Añadir nuevos marcadores y mantener los existentes
   ipsActivas.forEach(ip => {
     if (!marcadores.has(ip.ip)) {
+      // Validar lat y lon antes de crear el marcador
+      if (isNaN(ip.lat) || isNaN(ip.lon)) {
+        console.error('Datos de IP con coordenadas inválidas:', ip);
+        return;
+      }
       const marker = agregarMarcador(ip.lat, ip.lon, `
         <div style="text-align: center;">
           <h3 style="margin: 0; color: #333;">${ip.pais}</h3>
@@ -103,13 +105,19 @@ function actualizarMarcadores(ipsActivas) {
   });
 }
 
+
 // Función para agregar un marcador al mapa
+
 function agregarMarcador(lat, lon, popupInfo) {
-  // Crear el contenedor del marcador
+  // Verificar que las coordenadas sean válidas
+  if (isNaN(lat) || isNaN(lon)) {
+    console.error('Coordenadas inválidas:', { lat, lon });
+    return null; // No intentar crear el marcador
+  }
+
   const el = document.createElement('div');
   el.className = 'marker';
 
-  // Añadir un SVG con un halo circular
   el.innerHTML = `
     <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -125,10 +133,9 @@ function agregarMarcador(lat, lon, popupInfo) {
     </svg>
   `;
 
-  // Crear y añadir el marcador al mapa
   return new mapboxgl.Marker(el)
-    .setLngLat([lon, lat]) // Coordenadas
-    .setPopup(new mapboxgl.Popup().setHTML(popupInfo)) // Popup asociado
+    .setLngLat([lon, lat])
+    .setPopup(new mapboxgl.Popup().setHTML(popupInfo))
     .addTo(map);
 }
 
