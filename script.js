@@ -41,6 +41,7 @@ async function detectClientIP() {
     });
 
     console.log('Información de IP enviada al servidor:', visita);
+    guardarIpsEnLocalStorage([visita]); // Guardar la IP detectada en el localStorage
   } catch (error) {
     console.error('Error al detectar IP:', error);
   }
@@ -63,6 +64,7 @@ socket.onmessage = (event) => {
   const visitas = JSON.parse(event.data);
   console.log('Datos recibidos de WebSocket:', visitas);
   actualizarMarcadores(visitas);
+  guardarIpsEnLocalStorage(visitas); // Guardar las IPs recibidas en el localStorage
 };
 
 socket.onerror = (error) => {
@@ -139,9 +141,13 @@ function agregarMarcador(lat, lon, popupInfo) {
 }
 
 // Función para guardar las IPs activas en el localStorage
-function guardarIpsEnLocalStorage(visita) {
+function guardarIpsEnLocalStorage(visitas) {
   let ipsActivas = JSON.parse(localStorage.getItem('ipsActivas')) || [];
-  ipsActivas.push(visita);
+  visitas.forEach(visita => {
+    if (!ipsActivas.some(ip => ip.ip === visita.ip)) {
+      ipsActivas.push(visita);
+    }
+  });
   localStorage.setItem('ipsActivas', JSON.stringify(ipsActivas));
 }
 
