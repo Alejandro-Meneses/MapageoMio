@@ -21,15 +21,8 @@ socket.onopen = () => {
 };
 
 socket.onmessage = (event) => {
-  const visita = JSON.parse(event.data);
-
-  // Agregar marcador dinámico al mapa
-  agregarMarcador(visita.lat, visita.lon, `
-    <div style="text-align: center;">
-      <h3 style="margin: 0; color: #333;">${visita.pais}</h3>
-      <p style="margin: 0;">Ciudad: <b>${visita.ciudad}</b></p>
-    </div>
-  `);
+  const ipsActivas = JSON.parse(event.data);
+  actualizarMarcadores(ipsActivas);
 };
 
 socket.onerror = (error) => {
@@ -39,6 +32,34 @@ socket.onerror = (error) => {
 socket.onclose = () => {
   console.log('Conexión WebSocket cerrada');
 };
+
+const marcadores = new Map();
+
+// Función para actualizar los marcadores en el mapa
+function actualizarMarcadores(ipsActivas) {
+  const nuevasIps = new Set(ipsActivas.map(ip => ip.ip));
+
+  // Eliminar marcadores de IPs que ya no están activas
+  for (const [ip, marker] of marcadores) {
+    if (!nuevasIps.has(ip)) {
+      marker.remove();
+      marcadores.delete(ip);
+    }
+  }
+
+  // Añadir nuevos marcadores y mantener los existentes
+  ipsActivas.forEach(ip => {
+    if (!marcadores.has(ip.ip)) {
+      const marker = agregarMarcador(ip.lat, ip.lon, `
+        <div style="text-align: center;">
+          <h3 style="margin: 0; color: #333;">${ip.pais}</h3>
+          <p style="margin: 0;">Ciudad: <b>${ip.ciudad}</b></p>
+        </div>
+      `);
+      marcadores.set(ip.ip, marker);
+    }
+  });
+}
 
 // Función para agregar un marcador al mapa
 function agregarMarcador(lat, lon, popupInfo) {
@@ -63,10 +84,8 @@ function agregarMarcador(lat, lon, popupInfo) {
   `;
 
   // Crear y añadir el marcador al mapa
-  new mapboxgl.Marker(el)
+  return new mapboxgl.Marker(el)
     .setLngLat([lon, lat]) // Coordenadas
     .setPopup(new mapboxgl.Popup().setHTML(popupInfo)) // Popup asociado
     .addTo(map);
 }
-
-

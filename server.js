@@ -4,7 +4,7 @@ const express = require('express');
 const path = require('path');
 
 const RABBITMQ_URL = 'amqp://admin:admin@rabbitmq:5672';
-const queueName = 'visitas';
+const queueName = 'ips_activas';
 const app = express();
 const PORT = 3000;
 
@@ -73,13 +73,13 @@ async function startConsumer() {
 
     channel.consume(queueName, (message) => {
       if (message !== null) {
-        const visita = JSON.parse(message.content.toString());
-        console.log('Mensaje recibido:', visita);
+        const ipsActivas = JSON.parse(message.content.toString());
+        console.log('IPs activas recibidas:', ipsActivas);
 
-        // Enviar el mensaje a todos los clientes WebSocket conectados
+        // Enviar las IPs activas a todos los clientes WebSocket conectados
         wss.clients.forEach(client => {
           if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(visita));
+            client.send(JSON.stringify(ipsActivas));
           }
         });
 
