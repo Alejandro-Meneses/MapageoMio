@@ -60,8 +60,9 @@ socket.onopen = () => {
 };
 
 socket.onmessage = (event) => {
-  const visita = JSON.parse(event.data);
-  actualizarMarcadores([visita]);
+  const visitas = JSON.parse(event.data);
+  console.log('Datos recibidos de WebSocket:', visitas);
+  actualizarMarcadores(visitas);
 };
 
 socket.onerror = (error) => {
@@ -105,9 +106,7 @@ function actualizarMarcadores(ipsActivas) {
   });
 }
 
-
 // Función para agregar un marcador al mapa
-
 function agregarMarcador(lat, lon, popupInfo) {
   // Verificar que las coordenadas sean válidas
   if (isNaN(lat) || isNaN(lon)) {
