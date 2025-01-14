@@ -5,6 +5,7 @@ const RABBITMQ_URL = 'amqp://admin:admin@rabbitmq:5672';
 const MONGO_URL = 'mongodb://admin:admin123@mongodb:27017/Mapa?authSource=admin';
 const queueName = 'ips_activas';
 
+// Conectar a MongoDB
 mongoose.connect(MONGO_URL)
   .then(() => console.log('Conexión a MongoDB exitosa'))
   .catch((err) => console.error('Error de conexión a MongoDB:', err));

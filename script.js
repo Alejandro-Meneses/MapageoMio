@@ -13,6 +13,47 @@ const map = new mapboxgl.Map({
   maxPitch: 0 // Bloquea vista 3D
 });
 
+// Detectar la IP del cliente
+async function detectClientIP() {
+  try {
+    const response = await fetch('https://ipinfo.io/json?token=58cfb474c004c3');
+    const data = await response.json();
+    const loc = data.loc.split(",");
+    const latitude = parseFloat(loc[0]);
+    const longitude = parseFloat(loc[1]);
+    const city = data.city || "Desconocida";
+    const country = data.country || "Desconocido";
+
+    const visita = {
+      ip: data.ip,
+      lat: latitude,
+      lon: longitude,
+      ciudad: city,
+      pais: country,
+      status: 'active'
+    };
+
+    // Enviar la información al servidor
+    await fetch('/save-ip', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(visita)
+    });
+
+    console.log('Información de IP enviada al servidor:', visita);
+  } catch (error) {
+    console.error('Error al detectar IP:', error);
+  }
+}
+
+// Llamar a la función detectClientIP cuando se carga la página
+window.onload = async () => {
+  await detectClientIP();
+  cargarIpsDesdeLocalStorage();
+};
+
 // Configuración del WebSocket
 const socket = new WebSocket('ws://localhost:8080');
 
@@ -21,8 +62,9 @@ socket.onopen = () => {
 };
 
 socket.onmessage = (event) => {
-  const ipsActivas = JSON.parse(event.data);
-  actualizarMarcadores(ipsActivas);
+  const visita = JSON.parse(event.data);
+  actualizarMarcadores([visita]);
+  guardarIpsEnLocalStorage(visita);
 };
 
 socket.onerror = (error) => {
@@ -88,4 +130,19 @@ function agregarMarcador(lat, lon, popupInfo) {
     .setLngLat([lon, lat]) // Coordenadas
     .setPopup(new mapboxgl.Popup().setHTML(popupInfo)) // Popup asociado
     .addTo(map);
+}
+
+// Función para guardar las IPs activas en el localStorage
+function guardarIpsEnLocalStorage(visita) {
+  let ipsActivas = JSON.parse(localStorage.getItem('ipsActivas')) || [];
+  ipsActivas.push(visita);
+  localStorage.setItem('ipsActivas', JSON.stringify(ipsActivas));
+}
+
+// Función para cargar las IPs activas desde el localStorage
+function cargarIpsDesdeLocalStorage() {
+  const ipsActivas = JSON.parse(localStorage.getItem('ipsActivas'));
+  if (ipsActivas) {
+    actualizarMarcadores(ipsActivas);
+  }
 }
