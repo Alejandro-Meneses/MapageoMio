@@ -16,7 +16,7 @@ const ipSchema = new mongoose.Schema({
   lon: Number,
   ciudad: String,
   pais: String,
-  status: String,
+  status: String
 }, { collection: 'userIP' }); // Asocia el esquema con la colección userIP
 
 const IP = mongoose.model('IP', ipSchema);
