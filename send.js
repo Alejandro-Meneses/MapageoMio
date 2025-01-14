@@ -58,4 +58,4 @@ async function sendtoQueue(ipsActivas) {
 setInterval(async () => {
   console.log(`[${new Date().toISOString()}] Ejecutando consulta periódica de IPs activas...`);
   await ipactives();
-}, 2 * 60 * 1000);
+}, 5 * 60 * 1000);

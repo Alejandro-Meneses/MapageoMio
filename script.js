@@ -64,7 +64,6 @@ socket.onmessage = (event) => {
   const visitas = JSON.parse(event.data);
   console.log('Datos recibidos de WebSocket:', visitas);
   actualizarMarcadores(visitas);
-  guardarIpsEnLocalStorage(visitas); // Guardar las IPs recibidas en el localStorage
 };
 
 socket.onerror = (error) => {
@@ -80,14 +79,6 @@ const marcadores = new Map();
 // Función para actualizar los marcadores en el mapa
 function actualizarMarcadores(ipsActivas) {
   const nuevasIps = new Set(ipsActivas.map(ip => ip.ip));
-
-  // Eliminar marcadores de IPs que ya no están activas
-  for (const [ip, marker] of marcadores) {
-    if (!nuevasIps.has(ip)) {
-      marker.remove();
-      marcadores.delete(ip);
-    }
-  }
 
   // Añadir nuevos marcadores y mantener los existentes
   ipsActivas.forEach(ip => {
@@ -106,38 +97,66 @@ function actualizarMarcadores(ipsActivas) {
       marcadores.set(ip.ip, marker);
     }
   });
+
+  // Actualizar el localStorage con las IPs activas
+  guardarIpsEnLocalStorage(ipsActivas);
 }
 
 // Función para agregar un marcador al mapa
-function agregarMarcador(lat, lon, popupInfo) {
-  // Verificar que las coordenadas sean válidas
+function agregarMarcador(lat, lon, popupInfo, duration = 5 * 60 * 1000) { // Duración de 5 minutos por defecto
   if (isNaN(lat) || isNaN(lon)) {
     console.error('Coordenadas inválidas:', { lat, lon });
-    return null; // No intentar crear el marcador
+    return null;
   }
 
+  // Crear el contenedor del marcador
   const el = document.createElement('div');
   el.className = 'marker';
 
-  el.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <circle cx="12" cy="12" r="5" fill="rgba(255, 255, 0, 0.9)" style="filter: url(#glow);" />
-    </svg>
-  `;
+  // Crear el efecto de pulso dentro del marcador
+  const pulse = document.createElement('div');
+  pulse.className = 'pulse';
+  el.appendChild(pulse);
 
-  return new mapboxgl.Marker(el)
+  // Crear el popup asociado al marcador
+  const popup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false
+  }).setHTML(popupInfo);
+
+  // Agregar eventos al marcador para mostrar y ocultar el popup
+  el.addEventListener('mouseenter', () => {
+    popup.setLngLat([lon, lat]).addTo(map);
+  });
+  el.addEventListener('mouseleave', () => {
+    popup.remove();
+  });
+
+  // Crear el marcador y añadirlo al mapa
+  const marker = new mapboxgl.Marker({
+    element: el,
+    anchor: 'center'
+  })
     .setLngLat([lon, lat])
-    .setPopup(new mapboxgl.Popup().setHTML(popupInfo))
     .addTo(map);
+
+  // Reducir opacidad gradualmente
+  const interval = 100; // Intervalo de 100 ms
+  const steps = duration / interval;
+  let currentStep = 0;
+
+  const fadeInterval = setInterval(() => {
+    currentStep++;
+    const newOpacity = 1 - currentStep / steps; // Calcular la nueva opacidad
+    el.style.opacity = newOpacity.toFixed(2);
+
+    if (currentStep >= steps) {
+      clearInterval(fadeInterval); // Detener la reducción
+      marker.remove(); // Eliminar el marcador del mapa
+    }
+  }, interval);
+
+  return marker;
 }
 
 // Función para guardar las IPs activas en el localStorage
