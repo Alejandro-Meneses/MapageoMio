@@ -17,16 +17,14 @@ const ipSchema = new mongoose.Schema({
   lon: Number,
   ciudad: String,
   pais: String,
-  status: String
+  timeStamp: String
 }, { collection: 'userIP' }); // Asocia el esquema con la colección userIP
 
 const IP = mongoose.model('IP', ipSchema);
 
 async function ipactives() {
   try {
-    const ipsActivas = await IP.find({ status: "active" });
-    console.log("IPs activas encontradas:", ipsActivas);
-
+    const ipsActivas = await IP.find({});
     // Enviar las IPs activas a RabbitMQ
     await sendtoQueue(ipsActivas);
 
@@ -42,7 +40,6 @@ async function sendtoQueue(ipsActivas) {
     const channel = await connection.createChannel();
     await channel.assertQueue(queueName);
     channel.sendToQueue(queueName, Buffer.from(JSON.stringify(ipsActivas)));
-    console.log('IPs activas enviadas a la cola:', ipsActivas);
   } catch (error) {
     console.log("Error al enviar IPs activas a la cola:", error);
   }
@@ -58,4 +55,4 @@ async function sendtoQueue(ipsActivas) {
 setInterval(async () => {
   console.log(`[${new Date().toISOString()}] Ejecutando consulta periódica de IPs activas...`);
   await ipactives();
-}, 5 * 60 * 1000);
+}, 1000);

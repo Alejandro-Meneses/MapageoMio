@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const amqp = require('amqplib');
 const WebSocket = require('ws');
 const path = require('path');
+const { timeStamp } = require('console');
 
 const app = express();
 const PORT = 3000;
@@ -28,7 +29,7 @@ const ipSchema = new mongoose.Schema({
   lon: Number,
   ciudad: String,
   pais: String,
-  status: String
+  timeStamp: String
 }, { collection: 'userIP' });
 
 const IP = mongoose.model('IP', ipSchema);
@@ -41,7 +42,7 @@ app.get('/', (req, res) => {
 // Ruta para manejar las visitas
 app.post('/api/visitas', async (req, res) => {
   try {
-    const { ip, lat, lon, ciudad, pais, status } = req.body;
+    const { ip, lat, lon, ciudad, pais, timestamp } = req.body;
 
     // Verificar si la IP ya existe en MongoDB
     const existe = await IP.findOne({ ip });
@@ -50,7 +51,7 @@ app.post('/api/visitas', async (req, res) => {
     }
 
     // Crear y guardar una nueva entrada en MongoDB
-    const nuevaVisita = new IP({ ip, lat, lon, ciudad, pais, status });
+    const nuevaVisita = new IP({ ip, lat, lon, ciudad, pais, timestamp: timestamp.toString()});
     await nuevaVisita.save();
 
     console.log(`Nueva visita guardada: ${ip}`);
