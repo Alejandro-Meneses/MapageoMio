@@ -79,7 +79,6 @@ async function startConsumer() {
     channel.consume(queueName, (message) => {
       if (message !== null) {
         const ipsActivas = JSON.parse(message.content.toString());
-        console.log('IPs activas recibidas de RabbitMQ:', ipsActivas);
 
         // Enviar las IPs activas a todos los clientes WebSocket conectados
         wss.clients.forEach(client => {

@@ -19,9 +19,6 @@ const map = new mapboxgl.Map({
 });
 
 // Detectar la IP del cliente
-// Detectar la IP del cliente
-// Detectar la IP del cliente
-// Detectar la IP del cliente
 async function detectClientIP() {
   try {
     const response = await fetch('https://ipinfo.io/json?token=58cfb474c004c3');
