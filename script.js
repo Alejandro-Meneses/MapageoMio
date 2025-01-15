@@ -19,6 +19,9 @@ const map = new mapboxgl.Map({
 });
 
 // Detectar la IP del cliente
+// Detectar la IP del cliente
+// Detectar la IP del cliente
+// Detectar la IP del cliente
 async function detectClientIP() {
   try {
     const response = await fetch('https://ipinfo.io/json?token=58cfb474c004c3');
@@ -29,13 +32,22 @@ async function detectClientIP() {
     const city = data.city || "Desconocida";
     const country = data.country || "Desconocido";
 
+    // Obtener la hora local en la zona horaria de España
+    const timestamp = new Intl.DateTimeFormat('es-ES', {
+      timeZone: 'Europe/Madrid',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(new Date());
+
     const visita = {
       ip: data.ip,
       lat: latitude,
       lon: longitude,
       ciudad: city,
       pais: country,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp // Usar la hora local en la zona horaria de España
     };
 
     // Enviar visita al servidor
