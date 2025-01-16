@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const express = require('express');
 const amqp = require('amqplib');
 const WebSocket = require('ws');
-const path = require('path');
 
 const app = express();
 const PORT = 3000;
@@ -10,6 +9,7 @@ const WS_PORT = 8080;
 
 const RABBITMQ_URL = 'amqp://admin:admin@rabbitmq:5672';
 const queueName = 'ips_activas';
+const deleteQueue = 'eliminar_visitas';
 
 // Configuración de Express
 app.use(express.json());
@@ -50,6 +50,20 @@ app.post('/api/visitas', async (req, res) => {
 
     console.log(`Nueva visita guardada: ${ip}`);
     res.status(201).json({ message: 'Visita almacenada con éxito' });
+
+    // Publicar un mensaje en RabbitMQ para retransmitir datos por WebSocket
+    const connection = await amqp.connect(RABBITMQ_URL);
+    const channel = await connection.createChannel();
+    await channel.assertQueue(queueName, { durable: true });
+    channel.sendToQueue(queueName, Buffer.from(JSON.stringify([nuevaVisita])));
+
+    // Publicar un mensaje en RabbitMQ para eliminación programada
+    const delay = 5 * 60 * 1000; // 5 minutos
+    await channel.assertQueue(deleteQueue, { durable: true });
+    channel.sendToQueue(deleteQueue, Buffer.from(JSON.stringify({ ip })), {
+      headers: { 'x-delay': delay },
+    });
+    console.log(`Mensaje enviado a RabbitMQ para eliminar IP: ${ip} en 5 minutos`);
   } catch (error) {
     console.error('Error al procesar visita:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
@@ -61,13 +75,10 @@ const wss = new WebSocket.Server({ port: WS_PORT });
 
 wss.on('connection', (ws) => {
   console.log('Nuevo cliente WebSocket conectado');
-
-  ws.on('close', () => {
-    console.log('Cliente WebSocket desconectado');
-  });
+  ws.on('close', () => console.log('Cliente WebSocket desconectado'));
 });
 
-// Función para retransmitir datos de RabbitMQ a WebSocket
+// Consumidor para retransmitir datos a WebSocket
 async function startConsumer() {
   try {
     const connection = await amqp.connect(RABBITMQ_URL);
@@ -79,15 +90,12 @@ async function startConsumer() {
     channel.consume(queueName, (message) => {
       if (message !== null) {
         const ipsActivas = JSON.parse(message.content.toString());
-
-        // Enviar las IPs activas a todos los clientes WebSocket conectados
         wss.clients.forEach(client => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(ipsActivas));
           }
         });
-
-        channel.ack(message); // Confirmar el mensaje como procesado
+        channel.ack(message);
       }
     });
   } catch (error) {
@@ -95,10 +103,41 @@ async function startConsumer() {
   }
 }
 
-// Iniciar el consumidor de RabbitMQ
-startConsumer();
+// Consumidor para manejar eliminaciones
+async function startDeleteConsumer() {
+  try {
+    const connection = await amqp.connect(RABBITMQ_URL);
+    const channel = await connection.createChannel();
 
-// Iniciar el servidor HTTP
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+    await channel.assertQueue(deleteQueue, {
+      arguments: {
+        'x-message-ttl': 300000 // 5 minutos en milisegundos
+      }
+    });    console.log(`Esperando mensajes en la cola "${deleteQueue}" para eliminaciones...`);
+
+    channel.consume(deleteQueue, async (msg) => {
+      if (msg !== null) {
+        const { ip } = JSON.parse(msg.content.toString());
+        try {
+          const eliminado = await IP.deleteOne({ ip });
+          if (eliminado.deletedCount > 0) {
+            console.log(`Visita eliminada: ${ip}`);
+          } else {
+            console.log(`No se encontró la visita para eliminar: ${ip}`);
+          }
+        } catch (error) {
+          console.error(`Error al eliminar la visita (${ip}):`, error);
+        }
+        channel.ack(msg);
+      }
+    });
+  } catch (error) {
+    console.error('Error al iniciar el consumidor de RabbitMQ:', error);
+  }
+}
+
+// Iniciar los consumidores
+startConsumer();
+startDeleteConsumer();
+
+app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));

@@ -45,6 +45,7 @@ async function sendtoQueue(ipsActivas) {
   }
 }
 
+
 // Ejecuta la consulta de IPs activas al inicio del programa
 (async () => {
   console.log(`[${new Date().toISOString()}] Ejecutando consulta inicial de IPs activas...`);

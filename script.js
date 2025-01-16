@@ -169,22 +169,3 @@ function agregarMarcador(lat, lon, popupInfo, duration = 5 * 60 * 1000) { // Dur
 
   return marker;
 }
-
-// Función para guardar las IPs activas en el localStorage
-// function guardarIpsEnLocalStorage(visitas) {
-//   let ipsActivas = JSON.parse(localStorage.getItem('ipsActivas')) || [];
-//   visitas.forEach(visita => {
-//     if (!ipsActivas.some(ip => ip.ip === visita.ip)) {
-//       ipsActivas.push(visita);
-//     }
-//   });
-//   localStorage.setItem('ipsActivas', JSON.stringify(ipsActivas));
-// }
-
-// // Función para cargar las IPs activas desde el localStorage
-// function cargarIpsDesdeLocalStorage() {
-//   const ipsActivas = JSON.parse(localStorage.getItem('ipsActivas'));
-//   if (ipsActivas) {
-//     actualizarMarcadores(ipsActivas);
-//   }
-// }

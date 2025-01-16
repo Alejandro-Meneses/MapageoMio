@@ -1,0 +1,11 @@
+FROM rabbitmq:3-management
+
+# Instalar curl y unzip para manejar el plugin
+RUN apt-get update && apt-get install -y curl unzip && rm -rf /var/lib/apt/lists/*
+
+# Descargar e instalar el plugin delayed_message_exchange para 3.13.x
+RUN curl -LO https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases/download/v3.13.0/rabbitmq_delayed_message_exchange-3.13.0.ez && \
+    mv rabbitmq_delayed_message_exchange-3.13.0.ez /plugins/
+
+# Habilitar el plugin delayed_message_exchange
+RUN rabbitmq-plugins enable rabbitmq_delayed_message_exchange

@@ -13,7 +13,9 @@ services:
     command: ["sh", "/usr/src/app/start.sh"]
 
   rabbitmq:
-    image: rabbitmq:3-management
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbitmq
     container_name: rabbitmq
     ports:
       - "5672:5672"   # Puerto AMQP para RabbitMQ
